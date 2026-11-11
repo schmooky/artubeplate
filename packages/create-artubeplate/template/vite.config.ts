@@ -3,7 +3,7 @@ import { artubePartnerLoader } from '@artube/loader';
 import { artubeplate } from '@artubeplate/core/vite';
 
 // Artube serves the built game from a CDN path → RELATIVE asset URLs on build; the RGS lives on
-// the SAME origin at `/api-rgs/…`, so there is no backend host to configure anywhere.
+// the SAME origin at `/api/rgs/…`, so there is no backend host to configure anywhere.
 //
 // The math (index.json + lookUpTable_* + books_*) lives in the top-level `math/` folder, OUTSIDE
 // `public/`, so it never ships in `dist/`: upload `math/` to Artube Hub; Artube's pipeline builds

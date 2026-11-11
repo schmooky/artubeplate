@@ -22,7 +22,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const templateDir = join(here, 'template');
 
 // The @artubeplate/core range the scaffold pins (the template dev-links `workspace:*`).
-const CORE_VERSION = '^1.2.3';
+const CORE_VERSION = '^2.0.0';
 
 const isText = (n) => /\.(ts|tsx|js|jsx|mjs|cjs|json|html?|css|md|txt|ya?ml|svg|env|example)$/i.test(n) || n === '_gitignore' || n === '.gitignore';
 
@@ -257,7 +257,7 @@ ${bold('Ship')}
   ${dim('•')} commit ${cyan('package-lock.json')} (the pipeline installs with npm ci)${lockNote}
   ${dim('•')} test from the game card in Artube Hub: PLAY / DEMO, or Play on Localhost → ${run} dev
 
-${dim('Docs: https://github.com/lowres-labs/artubeplate')}
+${dim('Docs: https://github.com/schmooky/artubeplate')}
 `);
 }
 

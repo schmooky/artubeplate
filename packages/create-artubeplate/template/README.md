@@ -1,7 +1,7 @@
 # {{name}}
 
 A slot game for the Artube RGS, built on
-[`@artubeplate/core`](https://github.com/lowres-labs/artubeplate).
+[`@artubeplate/core`](https://github.com/schmooky/artubeplate).
 
 ```bash
 npm install
@@ -35,7 +35,7 @@ To use different math, replace `math/` and run `npm run math:check`.
 | A set somewhere else | `ARTUBEPLATE_MATH=/path/to/set npm run dev` |
 
 `npm run math:stats` prints RTP, hit rate, max win and win odds per mode. The formats are described
-in [docs/MATH_CONTRACT.md](https://github.com/lowres-labs/artubeplate/blob/main/docs/MATH_CONTRACT.md).
+in [docs/MATH_CONTRACT.md](https://github.com/schmooky/artubeplate/blob/main/docs/MATH_CONTRACT.md).
 
 `math/` is outside `public/`, so it never ends up in `dist/`. In `npm run dev` the artubeplate Vite
 plugin serves it to the mock and validates it on start.
@@ -117,7 +117,7 @@ a shader dissolve; leaving dims back to the base look.
 
 All of it is `@artubeplate/core/scenes`: scenes are pixi Containers, transitions are `cut`, `dim`,
 `shader` and `morph`. See
-[docs/SCENES.md](https://github.com/lowres-labs/artubeplate/blob/main/docs/SCENES.md) to build your own
+[docs/SCENES.md](https://github.com/schmooky/artubeplate/blob/main/docs/SCENES.md) to build your own
 info screen from your art.
 
 ## Testing scenarios locally
@@ -141,14 +141,14 @@ In the browser console, `__GAME__` is the game: `__GAME__.inspect()`, `__GAME__.
 ## Playing a real Artube session locally
 
 Artube Hub's **Play on Localhost** opens the game URL, session included, on `http://localhost:8080`:
-the port `npm run dev` uses. Point the dev server at the DEV host first, so `/api-rgs` reaches the
+the port `npm run dev` uses. Point the dev server at the DEV host first, so `/api/rgs` reaches the
 real RGS:
 
 ```bash
 ARTUBE_HOST=https://<host of the DEV launch URL> npm run dev
 ```
 
-The dev server forwards `/api-rgs`, HTTP and WebSocket, to that host. A launch URL from anywhere
+The dev server forwards `/api/rgs`, HTTP and WebSocket, to that host. A launch URL from anywhere
 else works the same way: open `http://localhost:8080/?sessionId=…&gameId=…` with its values. One
 session allows one connection: opening it here takes it over from any other tab.
 
@@ -172,7 +172,7 @@ session allows one connection: opening it here takes it over from any other tab.
    scripts exist.
 4. **Test session.** Open the game from its card in Artube Hub: PLAY or Play in New Tab (with a
    test player), or DEMO. Hub creates the session and puts it in the game URL; the build connects
-   to the real RGS at `/api-rgs/api/slot` on the page's own host. A deployed build opened without
+   to the real RGS at `/api/rgs/slot` on the page's own host. A deployed build opened without
    a session shows "No game session"; only `npm run dev` and demo builds play on the mock.
 
 Content-hashed file names are required (the CDN caches assets for a year). The asset pipeline and

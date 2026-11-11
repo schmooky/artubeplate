@@ -1,7 +1,7 @@
 # create-artubeplate
 
 Scaffold a slot game for the **Artube RGS** on
-[`@artubeplate/core`](https://github.com/lowres-labs/artubeplate/tree/main/packages/core), optionally
+[`@artubeplate/core`](https://github.com/schmooky/artubeplate/tree/main/packages/core), optionally
 with the math you already have.
 
 ```bash

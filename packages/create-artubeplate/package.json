@@ -1,6 +1,6 @@
 {
   "name": "create-artubeplate",
-  "version": "1.2.3",
+  "version": "2.0.0",
   "description": "Scaffold an Artube RGS slot game on @artubeplate/core — `npm create artubeplate@latest`, optionally with your own math (`-- --math ./path`).",
   "keywords": [
     "artube",
@@ -15,14 +15,14 @@
   ],
   "license": "MIT",
   "author": "Dmitry Vasiliev",
-  "homepage": "https://github.com/lowres-labs/artubeplate/tree/main/packages/create-artubeplate#readme",
+  "homepage": "https://github.com/schmooky/artubeplate/tree/main/packages/create-artubeplate#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lowres-labs/artubeplate.git",
+    "url": "git+https://github.com/schmooky/artubeplate.git",
     "directory": "packages/create-artubeplate"
   },
   "bugs": {
-    "url": "https://github.com/lowres-labs/artubeplate/issues"
+    "url": "https://github.com/schmooky/artubeplate/issues"
   },
   "type": "module",
   "bin": {

@@ -203,7 +203,7 @@ moves. `hudPlayArea` lays its containers out again when those controls change. N
 | `@artubeplate/core/audio` | `GameAudio` / `createGameAudio`: the slot mix on zvuk (below). Loaded lazily by the core when a game passes `audio`. |
 | `@artubeplate/core/assets` | The game side of the asset pipeline: `loadAssets` (the manifest's texture bundles through Pixi's Assets, with progress), `soundsFromManifest` (its audio as zvuk entries: folder = bus, `.N` = variants, music stems), `textureManifest`. |
 | `@artubeplate/core/testing` | `MockRgs`, `InstantTicker` and `mockHud()`, a recording HUD port, to run whole rounds headless. |
-| `@artubeplate/core/vite` | `artubeplate()`: serves `math/` to the mock during `vite dev` and validates it on start; proxies `/api-rgs` to `$ARTUBE_HOST`; runs the asset pipeline over `raw-assets/` (AssetPack: spritesheets, @0.5x, png/webp, webm + mp3, content-hashed names) and serves its manifest as `import assets from 'artubeplate:assets'`. `@assetpack/core` is needed only when the folder exists. |
+| `@artubeplate/core/vite` | `artubeplate()`: serves `math/` to the mock during `vite dev` and validates it on start; proxies `/api/rgs` to `$ARTUBE_HOST`; runs the asset pipeline over `raw-assets/` (AssetPack: spritesheets, @0.5x, png/webp, webm + mp3, content-hashed names) and serves its manifest as `import assets from 'artubeplate:assets'`. `@assetpack/core` is needed only when the folder exists. |
 | `@artubeplate/core/node` | `validateDir`, `loadArtifactDir`, `writeArtifact`, `convertStake`, `packDir`, `ensureConfig`: the Node half of the math tooling. |
 
 ## Sound
@@ -266,7 +266,7 @@ motion.play(coin, 'wow', { variant: 'M' });
 
 | Launch | Transport |
 |---|---|
-| `?sessionId=…&gameId=…&lng=…` (an operator launch) | The real hub at `/api-rgs/api/slot?sessionId=…&game=<gameId>`, relative to the page; `lng` picks the language. |
+| `?sessionId=…&gameId=…&lng=…` (an operator launch) | The real hub at `/api/rgs/slot?sessionId=…&game=<gameId>`, relative to the page (Artube's address since 2026-11-09; the old `/api-rgs/api/slot` does not work on every domain Artube serves games from); `lng` picks the language. |
 | No `sessionId`, or `?mock=1` | `MockRgs`, drawing from the math the Vite plugin serves. |
 
 The mock takes URL knobs (`?balance=`, `?currency=demo`, `?frc=10`, `?maxWin=`, `?seed=`,
@@ -288,7 +288,7 @@ export default defineConfig(({ command }) => ({
 ```
 
 `artubeplate({ mathDir, validate, demoBuild, rgsHost })`: `mathDir` defaults to `$ARTUBEPLATE_MATH`, then
-`math`. `rgsHost` (default `$ARTUBE_HOST`) proxies `/api-rgs`, HTTP and WebSocket, to a real Artube
+`math`. `rgsHost` (default `$ARTUBE_HOST`) proxies `/api/rgs`, HTTP and WebSocket, to a real Artube
 environment during `vite dev`, so `http://localhost:8080/?sessionId=…&gameId=…` (Artube Hub's Play on Localhost) plays a real session. `demoBuild: true` copies the math into the build for a mock-only demo site. Never upload
 that build to Artube. The plugin also decides whether the mock may run: in `vite dev` and a demo
 build it may; a plain build never runs it, so a deployed game opened without a session shows
