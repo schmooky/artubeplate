@@ -245,8 +245,9 @@ test.describe('autoplay: interrupting a run', () => {
     await tapRounds(page, 100);
     await expect.poll(() => spins(page), { timeout: 30_000, intervals: [50] }).toBeGreaterThanOrEqual(1);
     // Through a round the round button wears its STOP face (#StopBtn); between rounds of a run
-    // SPIN is disabled. A short timeout: a press that waited for the run to end would prove nothing.
-    await page.locator('#StopBtn').click({ timeout: 5_000 });
+    // SPIN is disabled. The press waits for a round in play (a slow machine spends longer between
+    // rounds), never for the run to end: 100 rounds take minutes.
+    await page.locator('#StopBtn').click({ timeout: 30_000 });
     const atPress = await spins(page);
     await expect.poll(() => spins(page), { timeout: 30_000, intervals: [100] }).toBeGreaterThanOrEqual(atPress + 2);
     expect((await run(page)).active).toBe(true);

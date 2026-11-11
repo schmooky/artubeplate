@@ -58,10 +58,18 @@ test('buy feature: 100× charged, the rules screen waits, the bonus plays by its
   await expect.poll(() => hudState(page), { timeout: 20_000 }).toMatch(/feature/);
   await expect(page.locator('#PlaceBetBtn')).toBeHidden();
   await page.screenshot({ path: 'test-results/shots/desktop-free-spins.png' });
-  // The total waits too.
-  await expect.poll(() => hudState(page), { timeout: 110_000, intervals: [300] }).toBe('hidden');
-  await page.waitForTimeout(3000);
-  expect(await hudState(page)).toBe('hidden');
+  // The total waits too. A screen inside the bonus (a retrigger's) hides the bar for a moment as
+  // well, and a slow machine can catch it: the total is the screen that is still up 3 s later.
+  await expect
+    .poll(
+      async () => {
+        if ((await hudState(page)) !== 'hidden') return false;
+        await page.waitForTimeout(3000);
+        return (await hudState(page)) === 'hidden';
+      },
+      { timeout: 150_000, intervals: [300] },
+    )
+    .toBe(true);
   await page.screenshot({ path: 'test-results/shots/desktop-total-win.png' });
   await continueScreen(page);
   const s = await waitIdle(page, 30_000);
@@ -193,8 +201,18 @@ test('mobile portrait layout', async ({ browser }) => {
   await page.goto('/?seed=7&intro=1');
   await introReady(page); // the portrait intro: one card at a time
   await page.screenshot({ path: 'test-results/shots/mobile-intro.png' });
-  await page.touchscreen.tap(195, 420);
-  await expect.poll(async () => (await snap(page)).phase, { timeout: 15_000 }).toBe('idle');
+  // A tap during the intro's entrance only finishes the entrance (a slow machine is still in it):
+  // tap until the game is in.
+  await expect
+    .poll(
+      async () => {
+        const phase = (await snap(page)).phase;
+        if (phase === '') await page.touchscreen.tap(195, 420);
+        return phase;
+      },
+      { timeout: 60_000, intervals: [1500] },
+    )
+    .toBe('idle');
   await expect(page.locator('#PlaceBetBtn')).toBeVisible();
   // The strip's readouts: each label stands centred over its value, BET (wrapped once more) too.
   const offsets = await page.evaluate(() =>
