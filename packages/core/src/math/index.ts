@@ -4,6 +4,7 @@
 export * from './types';
 export * from './manifest';
 export * from './weights';
+export * from './payoutStep';
 export * from './books';
 export * from './zstdFrame';
 export * from './validate';

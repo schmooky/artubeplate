@@ -27,6 +27,7 @@ import { RealTicker, type Ticker } from '../engine/ticker';
 import { TurboClock, type TurboState } from '../engine/turbo';
 import { FSM, type AudioPort, type Phase, type PhaseContext, type ViewHooks } from '../engine/fsm';
 import { defaultPhases, SettlePhase } from '../engine/phases';
+import { playGuarded } from '../engine/roundGuard';
 import { presentRgsError, SESSION_ENDED_MESSAGE as SESSION_ENDED } from '../engine/errors';
 import { exactMoney, type GameRound, type InterpretBook, type RoundInfo } from '../engine/round';
 import type { HudPort } from '../engine/hud-port';
@@ -790,7 +791,7 @@ export function createArtubeGame<T = unknown, V = unknown, P = unknown>(opts: Cr
       if (machine.current !== 'idle' || terminal || recovering) return false;
       turbo.resetSkip();
       settle?.markStart(ticker.now());
-      void machine.transition('spin').catch((e) => console.error('[artubeplate] round failed', e));
+      void playGuarded(machine, ctx!, () => hudObj.ui.autoplay.stop());
       return true;
     };
     // A bonus plays out unless the game allows skipping it. It starts when the game says so
@@ -1095,10 +1096,10 @@ export function createArtubeGame<T = unknown, V = unknown, P = unknown>(opts: Cr
   }
 
   function requestSpin(): boolean {
-    if (!fsm || fsm.current !== 'idle' || terminal) return false;
+    if (!fsm || !ctx || fsm.current !== 'idle' || terminal) return false;
     turbo.resetSkip();
     settle?.markStart(ticker.now());
-    void fsm.transition('spin');
+    void playGuarded(fsm, ctx, () => hud?.ui.autoplay.stop());
     return true;
   }
 

@@ -80,8 +80,18 @@ A game has 1 to 50 modes.
 - `weight` ≥ 1. A zero weight is rejected: drop the row from both files instead.
 - `multiplier` is the payout **in credits** (0 = a loss). The win is `multiplier / betCredit`
   times the base bet: at `betCredit: 100`, `116` pays 1.16× the bet.
-- **Rows that pay the same multiplier must have the same weight.**
+- **Rows that pay the same multiplier must have the same weight.** (Artube's page has accepted
+  different weights since November 2026; artubeplate keeps the stricter rule, which the Hub
+  accepts too.)
 - At most 10,000 distinct multipliers per mode.
+- **Payouts on a 0.10× step pay whole cents.** The Games API pays
+  `floor(multiplier / betCredit × bet)` to the cent on Artube's 14-bet ladder (0.10 to 100 EUR at
+  Bet Factor 1.0). A finer step leaves fractions of a cent on some bets, which are floored: the
+  smallest bet loses 0.5-0.8 RTP points and the game fails Artube's math acceptance. Keep every
+  multiplier a multiple of `betCredit / 10` (10 credits at `betCredit: 100`), or ask your Artube
+  AM for the Bet Factor the step needs before Live Ready (0.05× → 2.0, 0.04× → 2.5, 0.02× → 5.0).
+  A step of 0.01× or finer cannot be paid in whole cents and is not allowed. `math validate`
+  warns with the Bet Factor to ask for, or fails the set.
 
 ### The books file
 

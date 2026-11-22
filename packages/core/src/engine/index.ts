@@ -6,5 +6,6 @@ export * from './hud-port';
 export * from './round';
 export * from './fsm';
 export * from './phases';
+export * from './roundGuard';
 export * from './beat';
 export * from './errors';

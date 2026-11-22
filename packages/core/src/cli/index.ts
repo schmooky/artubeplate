@@ -38,8 +38,10 @@ ${bold('validate')}   runs every check Artube Hub runs on upload: the file set (
              weights/books pair per mode, nothing extra), one zstd stream per file, the
              weights rules (integers, no header, no zero weights, one weight per multiplier,
              ≤ 10,000 multipliers), the books envelope (one JSON object/array per line,
-             ≤ 96 KiB, depth ≤ 64), positional line counts, and RTP recomputed exactly
-             from the weights (±0.50 pp). Exit code 1 if the Hub would reject the set.
+             ≤ 96 KiB, depth ≤ 64), positional line counts, RTP recomputed exactly
+             from the weights (±0.50 pp), and the payout step (whole cents on Artube's
+             bet ladder: 0.10× is fine at Bet Factor 1.0, 0.05/0.04/0.02× warn with the
+             Bet Factor to ask for, finer fails). Exit code 1 if the Hub would reject the set.
 
 ${bold('config')}     writes a starter settings.config (board + symbols, inferred from the base
              mode's books) into index.json when the set has none — the client needs it.
@@ -60,7 +62,7 @@ function printReport(r: ValidationReport, strict: boolean): void {
     console.log(`${dim('index.json')}  ${r.manifest.modes.length} mode(s), betCredit ${s.betCredit}${s.config === undefined ? yellow('  (no settings.config)') : ''}`);
   }
   if (r.modes.length) {
-    const head = ['mode', 'type', 'price', 'RTP decl', 'RTP calc', 'rows', 'mults', 'hit', 'max win', 'max odds'];
+    const head = ['mode', 'type', 'price', 'RTP decl', 'RTP calc', 'rows', 'mults', 'hit', 'max win', 'max odds', 'step'];
     const rows = r.modes.map((m) => [
       m.name,
       m.type,
@@ -72,6 +74,7 @@ function printReport(r: ValidationReport, strict: boolean): void {
       `${(m.hitRate * 100).toFixed(1)}%`,
       `${+m.maxWinX.toFixed(2)}×`,
       oddsText(m.maxWinProbability),
+      m.payoutStep ? `${+m.payoutStep.bets.toFixed(4)}×${m.payoutStep.betFactor === 1 ? '' : m.payoutStep.betFactor === null ? ' ✖' : ` (BF ${m.payoutStep.betFactor.toFixed(1)})`}` : '-',
     ]);
     const widths = head.map((h, i) => Math.max(h.length, ...rows.map((row) => row[i]!.length)));
     const line = (cells: string[]): string => cells.map((c, i) => c.padEnd(widths[i]!)).join('  ');

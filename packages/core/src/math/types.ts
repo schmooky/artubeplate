@@ -8,6 +8,8 @@
 //
 // Source of truth: https://docs-review.artube-888.live/en/backend/rgs/preparing-math/
 
+import type { PayoutStep } from './payoutStep';
+
 /** Every documented limit, in one place (the Hub rejects a set that breaks any of them). */
 export const LIMITS = Object.freeze({
   /** `index.json`, uncompressed. */
@@ -108,6 +110,8 @@ export interface ModeReport {
   tail: Array<{ x: number; probability: number }>;
   booksBytes: number;
   weightsBytes: number;
+  /** The payouts' step and the Bet Factor it needs (null: the mode never pays). */
+  payoutStep: PayoutStep | null;
 }
 
 export interface ValidationReport {

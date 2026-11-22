@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { FSM, defaultPhases, InstantTicker, TurboClock, type PhaseContext, type Phase, type GameRound } from '../src/engine/index';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { FSM, defaultPhases, InstantTicker, TurboClock, playGuarded, type PhaseContext, type Phase, type GameRound } from '../src/engine/index';
 import { RootStore } from '../src/stores/index';
 import { MockRgs } from '../src/rgs/MockRgs';
 import { mockHud } from '../src/testing/index';
@@ -129,5 +129,79 @@ describe('the round machine (headless)', () => {
     await fsm.transition('spin');
     expect(settled[0]).toMatchObject({ mode: 'buyfs', modeType: 'BuyFeature', stake: 100 });
     expect(stores.ui.nextMode()).toBe('base'); // one-shot consumed
+  });
+});
+
+describe('a round that throws still ends (playGuarded)', () => {
+  // Gates of Gorilla's Gym, 2026-11-20: the bonus threw on its first board and the machine stayed in
+  // Present: the bar locked, the game frozen until a reload. The platform had settled the money.
+  const quiet = () => vi.spyOn(console, 'error').mockImplementation(() => {});
+
+  it('a Present that throws after the spin answered: the round settles, is reported once, and the next spin plays', async () => {
+    const present: Phase = {
+      name: 'present',
+      async enter() {
+        throw new Error('the scene cannot show this board');
+      },
+    };
+    const { network, stores, hud, fsm, ctx, settled } = await rig({ present, mock: { balance: 100 } });
+    network.forceRow('base', (await network.rowsWhere('base', (m) => m === 300))[0]!);
+    const err = quiet();
+    let failures = 0;
+    await playGuarded(fsm, ctx, () => failures++);
+    err.mockRestore();
+    expect(failures).toBe(1);
+    expect(fsm.current).toBe('idle');
+    expect(stores.ui.spinning.get()).toBe(false);
+    expect(stores.balance.balance.get()).toBe(100 - 1 + 3);
+    expect(stores.balance.lastWin.get()).toBe(3);
+    expect(hud.reportedRounds()).toEqual([{ win: 3, stake: 1 }]);
+    expect(settled).toHaveLength(1);
+    network.forceRow('base', (await network.rowsWhere('base', (m) => m === 0))[0]!);
+    const again = quiet();
+    await playGuarded(fsm, ctx);
+    again.mockRestore();
+    expect(fsm.current).toBe('idle');
+    expect(stores.balance.balance.get()).toBe(101);
+  });
+
+  it('a Settle that throws (the history call): the machine still comes back to idle with the money landed', async () => {
+    const { network, stores, fsm, ctx } = await rig({ mock: { balance: 100 } });
+    (ctx as { afterRound: unknown }).afterRound = async () => {
+      throw new Error('history is down');
+    };
+    network.forceRow('base', (await network.rowsWhere('base', (m) => m === 300))[0]!);
+    const err = quiet();
+    await playGuarded(fsm, ctx);
+    err.mockRestore();
+    expect(fsm.current).toBe('idle');
+    expect(stores.ui.spinning.get()).toBe(false);
+    expect(stores.balance.balance.get()).toBe(102);
+  });
+
+  it('a failure before the spin answered is not settled from an old round: it goes to recovery', async () => {
+    const base = new MockRgs({ math: art, latency: 0, balance: 100 });
+    const broken: RgsTransport = Object.assign(Object.create(base), {
+      spin: async () => ({}) as never, // an answer with nothing in it
+      session: () => base.session(),
+    });
+    const { fsm, ctx, recovered, settled, hud } = await rig({ network: broken });
+    const err = quiet();
+    await playGuarded(fsm, ctx);
+    err.mockRestore();
+    expect(recovered).toEqual(['round failed']);
+    expect(settled).toEqual([]);
+    expect(hud.reportedRounds()).toEqual([]);
+    expect(fsm.current).toBe('idle');
+  });
+
+  it('a round that plays normally is untouched', async () => {
+    const { network, stores, fsm, ctx, recovered } = await rig({ mock: { balance: 100 } });
+    network.forceRow('base', (await network.rowsWhere('base', (m) => m === 300))[0]!);
+    let failures = 0;
+    await playGuarded(fsm, ctx, () => failures++);
+    expect(failures).toBe(0);
+    expect(recovered).toEqual([]);
+    expect(stores.balance.balance.get()).toBe(102);
   });
 });

@@ -5,6 +5,7 @@
 
 import { parseManifest, requiredFiles } from './manifest';
 import { WeightsAccumulator, exactRtp, round2, rtpPasses, ratio, type WeightsSummary } from './weights';
+import { payoutStep } from './payoutStep';
 import { BooksAccumulator } from './books';
 import { inspectZstdFrames, frameProblem, type ByteReader } from './zstdFrame';
 import { LIMITS, type Issue, type ModeReport, type ValidationReport } from './types';
@@ -134,6 +135,23 @@ export async function validateArtifact(src: ArtifactSource, opts: ValidateOption
         if (m >= BigInt(x * betCredit)) tailMass[i] = tailMass[i]! + mass;
       });
     }
+    // The payout step: whole cents on every bet of Artube's ladder at Bet Factor 1.0, or the Bet Factor
+    // the studio must ask for; finer than 0.02 of a bet is not allowed at all.
+    const step = payoutStep(w.byMultiplier.keys(), betCredit);
+    if (step && step.betFactor === null)
+      issues.push({
+        level: 'error',
+        code: 'payout-step',
+        message: `Payouts move in steps of ${step.credits} credits (${+step.bets.toFixed(4)}x the bet): no Bet Factor pays that in whole cents, and Artube does not allow it. Coarsen the payouts to 0.10x the bet (Bet Factor 1.0), or at least 0.02x (Bet Factor 5.0).`,
+        mode: mode.name,
+      });
+    else if (step && step.betFactor !== 1)
+      issues.push({
+        level: 'warn',
+        code: 'payout-step',
+        message: `Payouts move in steps of ${step.credits} credits (${+step.bets.toFixed(4)}x the bet): at Artube's default Bet Factor 1.0 a win on the ${step.inexactBets.join(', ')} EUR bets can fall between cents and is floored, and Artube's math acceptance fails. Coarsen the payouts to 0.10x the bet, or ask your Artube AM for Bet Factor ${step.betFactor!.toFixed(1)} before Live Ready.`,
+        mode: mode.name,
+      });
     const mean = ratio(w.sumWM, w.sumW) / gm.cost;
     const meanSq = ratio(w.sumWM2, w.sumW) / (gm.cost * gm.cost);
     modes.push({
@@ -155,6 +173,7 @@ export async function validateArtifact(src: ArtifactSource, opts: ValidateOption
       tail: TAIL_X.map((x, i) => ({ x, probability: ratio(tailMass[i]!, w.sumW) })),
       booksBytes: bAcc.bytes,
       weightsBytes: w.bytes,
+      payoutStep: step,
     });
   }
 
