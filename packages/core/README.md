@@ -307,6 +307,12 @@ import { imageUrl } from '@artubeplate/core/assets';
 const card = imageUrl(assets, 'card-buy');   // 'assets/game/ui/card-buy-<hash>.webp', for an <img>
 ```
 
+Each texture is written at @1x and @0.5x, and `loadAssets` takes the size the device needs: the
+smallest one that fills its screen at its pixel ratio (capped at the renderer's 2x), measured against
+the 2560×1440 our backgrounds are drawn for. A phone and a small desktop load @0.5x, less than half
+the bytes; a full HD monitor and anything denser load @1x. `loadAssets(assets, { reference, resolution })`
+changes the rule for a game whose art is drawn for another screen.
+
 Ours are webp at quality 90 with its alpha untouched and avif at quality 80 in 4:4:4. A game changes
 them per format with sharp's options, drops one, or asks for png / jpg as well (written in full
 colour, never a palette) for a host that needs them:

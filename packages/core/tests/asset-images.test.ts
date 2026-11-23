@@ -70,3 +70,43 @@ describe('imageUrl: an image for the DOM', () => {
     expect(imageUrl(manifest, 'nope')).toBeUndefined();
   });
 });
+
+/**
+ * A PHONE DOES NOT DOWNLOAD THE FULL-SIZE ART.
+ *
+ * The pipeline writes every texture at @1x and @0.5x, but nothing told Pixi which to take, and its
+ * default is @1x: every device loaded the full-size files (Sushi Up Bonanza: 2.4 MB of images where
+ * 0.9 MB fills a phone's screen).
+ */
+import { manifestResolutions, textureResolutionFor } from '../src/assets';
+
+describe('the texture size a device loads', () => {
+  const pick = (width: number, height: number, dpr: number) => textureResolutionFor([1, 0.5], { device: { width, height, dpr } });
+
+  it('phones take @0.5x, whichever way up (rendered at 2x at the most)', () => {
+    expect(pick(390, 844, 3)).toBe(0.5);
+    expect(pick(844, 390, 3)).toBe(0.5);
+    expect(pick(430, 932, 3)).toBe(0.5);
+    expect(pick(360, 640, 2)).toBe(0.5);
+  });
+  it('a small or plain-density desktop takes @0.5x, a full HD one and anything denser @1x', () => {
+    expect(pick(1280, 800, 1)).toBe(0.5);
+    expect(pick(1920, 1080, 1)).toBe(1);
+    expect(pick(1440, 900, 2)).toBe(1);
+    expect(pick(2560, 1440, 1)).toBe(1);
+  });
+  it('a tablet takes @1x', () => {
+    expect(pick(768, 1024, 2)).toBe(1);
+  });
+  it('takes what there is: one size, or none listed', () => {
+    expect(textureResolutionFor([1], { device: { width: 390, height: 844, dpr: 3 } })).toBe(1);
+    expect(textureResolutionFor([], { device: { width: 390, height: 844, dpr: 3 } })).toBe(1);
+  });
+  it('a game with art drawn for another screen says so', () => {
+    expect(textureResolutionFor([1, 0.5], { reference: [1920, 1080], device: { width: 390, height: 844, dpr: 3 } })).toBe(1);
+  });
+  it('reads the sizes a manifest holds from its file names, audio left out', () => {
+    const m = { bundles: [{ name: 'g', assets: [{ alias: ['a'], src: ['g/a-1@0.5x.avif', 'g/a-2.avif', 'g/a-3@0.5x.webp', 'g/a-4.webp'] }, { alias: ['s'], src: ['audio/x.webm', 'audio/x.mp3'] }] }] } as unknown as AssetsManifest;
+    expect(manifestResolutions(m)).toEqual([0.5, 1]);
+  });
+});

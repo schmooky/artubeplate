@@ -33,7 +33,12 @@ export interface AssetsOptions {
    * defaults cut every png to a 256-colour dithered palette and ring round soft edges in webp.)
    */
   images?: { webp?: boolean | Record<string, unknown>; avif?: boolean | Record<string, unknown>; png?: boolean | Record<string, unknown>; jpg?: boolean | Record<string, unknown> };
-  /** Audio bitrates in kbps. Default effects 64 (Opus) / 96 (mp3) mono; music 96 / 128 stereo. */
+  /**
+   * Audio bitrates in kbps. Every sound in `raw-assets/` (wav, flac, mp3...) is a source: it is
+   * written as webm (Opus) and mp3, and the game takes the Opus where the browser plays it.
+   * Default effects 64 (Opus) / 96 (mp3) mono; music 64 / 128 stereo. Music is most of a game's
+   * download: at 64 kbps Opus two looping tracks are about 1.4 MB (96 kbps: 2.1 MB).
+   */
   audio?: { effects?: { opus?: number; mp3?: number }; music?: { opus?: number; mp3?: number } };
   /** Extra AssetPack config merged over ours (pipes, ignore, assetSettings…). */
   assetpack?: Record<string, unknown>;
@@ -93,7 +98,7 @@ export function imageSettings(images: AssetsOptions['images'] = {}): { webp: fal
 export async function assetPackConfig(r: ResolvedAssets, opts: AssetsOptions): Promise<Record<string, unknown>> {
   const { pixiPipes } = await import('@assetpack/core/pixi');
   const fx = { opus: opts.audio?.effects?.opus ?? 64, mp3: opts.audio?.effects?.mp3 ?? 96 };
-  const music = { opus: opts.audio?.music?.opus ?? 96, mp3: opts.audio?.music?.mp3 ?? 128 };
+  const music = { opus: opts.audio?.music?.opus ?? 64, mp3: opts.audio?.music?.mp3 ?? 128 };
   const audioOutputs = (channels: number, rate: { opus: number; mp3: number }) => [
     { formats: ['.webm'], recompress: true, options: { audioCodec: 'libopus', audioBitrate: rate.opus, audioChannels: channels, audioFrequency: 48000 } },
     { formats: ['.mp3'], recompress: true, options: { audioBitrate: rate.mp3, audioChannels: channels, audioFrequency: 44100 } },

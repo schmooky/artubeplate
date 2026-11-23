@@ -72,27 +72,82 @@ export function imageUrl(manifest: AssetsManifest, alias: string, opts: ImageUrl
   return undefined;
 }
 
-export interface LoadAssetsOptions {
+export interface TextureResolutionOptions {
+  /**
+   * The screen the full-size (@1x) art is drawn for, in pixels, either way up. Default 2560×1440:
+   * our backgrounds are 2560×1440 and 1440×2560.
+   */
+  reference?: [number, number];
+  /** The most device pixels per CSS pixel the game renders (its renderer's cap). Default 2. */
+  maxDpr?: number;
+  /**
+   * How far a smaller size may be stretched before the next one up is taken: 0.8 lets art be drawn
+   * up to a quarter larger than its pixels (it is mostly drawn smaller than them). Default 0.8.
+   */
+  tolerance?: number;
+  /** The device (for tests). Default: the screen and its pixel ratio. */
+  device?: { width: number; height: number; dpr: number };
+}
+
+/**
+ * Which of the texture sizes the pipeline wrote (`available`, e.g. [1, 0.5]) this device needs:
+ * the smallest one that still fills its screen. The screen, not the window: a window can grow after
+ * the load, a screen cannot. A phone (390×844 at 3x, rendered at 2x: 780 px across) takes @0.5x,
+ * less than half the bytes; a 1920×1080 monitor and anything denser take @1x.
+ */
+export function textureResolutionFor(available: number[], opts: TextureResolutionOptions = {}): number {
+  const sizes = [...new Set(available.filter((r) => r > 0))].sort((a, b) => a - b);
+  if (!sizes.length) return 1;
+  const device = opts.device ?? (typeof window === 'undefined' ? null : { width: window.screen?.width || window.innerWidth, height: window.screen?.height || window.innerHeight, dpr: window.devicePixelRatio || 1 });
+  if (!device || !(device.width > 0 && device.height > 0)) return sizes[sizes.length - 1]!;
+  const dpr = Math.min(Math.max(1, device.dpr), opts.maxDpr ?? 2);
+  const [rw, rh] = opts.reference ?? [2560, 1440];
+  // how much of the reference screen this one is, the long sides and the short sides compared
+  const need = Math.min((Math.max(device.width, device.height) * dpr) / Math.max(rw, rh), (Math.min(device.width, device.height) * dpr) / Math.min(rw, rh));
+  const enough = need * (opts.tolerance ?? 0.8);
+  return sizes.find((r) => r >= enough) ?? sizes[sizes.length - 1]!;
+}
+
+/** The texture sizes a manifest holds, from its file names (`name@0.5x.webp` is 0.5, no suffix is 1). */
+export function manifestResolutions(manifest: AssetsManifest): number[] {
+  const found = new Set<number>();
+  for (const b of manifest.bundles) {
+    for (const a of Array.isArray(b.assets) ? (b.assets as Entry[]) : []) {
+      if (isAudio(a)) continue;
+      for (const src of srcsOf(a)) found.add(Number(/@(\d+(?:\.\d+)?)x\./.exec(src)?.[1] ?? 1));
+    }
+  }
+  return [...found].sort((a, b) => a - b);
+}
+
+export interface LoadAssetsOptions extends TextureResolutionOptions {
   /** Bundles to load. Default: every bundle that has textures (or data), in manifest order. */
   bundles?: string[];
   /** Where the processed files are served, relative to the page. Default `assets`. */
   basePath?: string;
   /** 0..1 as the bundles load (feed the loader's progress bar). */
   onProgress?: (progress: number) => void;
+  /** The texture size to load, of those the pipeline wrote. Default: `textureResolutionFor` this device. */
+  resolution?: number;
 }
 
 let initialized = false;
 
 /**
- * Load the manifest's texture bundles through Pixi's Assets, with progress. Pixi resolves each
- * texture to the best resolution and format for the device. Safe to call more than once (later
+ * Load the manifest's texture bundles through Pixi's Assets, with progress. Each texture comes in
+ * the size this device needs (`textureResolutionFor`: a phone does not download the full-size art)
+ * and in the best format the browser decodes: avif, else webp. Safe to call more than once (later
  * calls load further bundles).
  */
 export async function loadAssets(manifest: AssetsManifest, opts: LoadAssetsOptions = {}): Promise<void> {
   const textures = textureManifest(manifest);
   if (!initialized) {
     initialized = true;
-    await Assets.init({ manifest: textures, basePath: opts.basePath ?? DEFAULT_ASSETS_BASE });
+    const sizes = manifestResolutions(textures);
+    const want = opts.resolution ?? textureResolutionFor(sizes, opts);
+    // the wanted size first, then the others by how close they are (a file missing in one size still loads)
+    const resolution = [...sizes].sort((a, b) => Math.abs(a - want) - Math.abs(b - want));
+    await Assets.init({ manifest: textures, basePath: opts.basePath ?? DEFAULT_ASSETS_BASE, texturePreference: { resolution: resolution.length ? resolution : [1], format: ['avif', 'webp', 'png', 'jpg', 'jpeg'] } });
   }
   const names = opts.bundles ?? textures.bundles.map((b) => b.name);
   if (!names.length) {
