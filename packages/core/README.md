@@ -201,9 +201,9 @@ moves. `hudPlayArea` lays its containers out again when those controls change. N
 | `@artubeplate/core/fx` | Cartoon effects: `Blitter` (sprites burst out of a point and streak into a counter, calling back on every arrival) and `CartoonFx` (GPU particle bursts on pylinka: sparkle, shard, puff, confetti, glow; pooled emitters, presets as data, your art or the drawn defaults). `CartoonFx.create()` loads `@pylinka/core` and `@pylinka/graph` when called, so they are needed only by games that use it. `StickerBakery` bakes the sticker look (an ink line hugging the shape, a white border around it, measured against the piece) onto flat art at load, so every piece and anything drawn in code share one line weight; `ink: 0` gives a white edge alone, `wobble` a hand-cut border that swells and thins along the outline, `shadow` a soft halo baked under the whole sticker. `LineShow` draws a line slot's win lines, white and simple: the round's overview (every line at once, every winning symbol woken) and the idle cycle's snake (a thick head tapering to a thin tail racing the zigzag into the last symbol, with an optional thin trail), every fade a group fade through one `AlphaFilter`, so crossing lines and joins never show while they fade; `SilhouetteMask` keeps those lines behind the winning symbols, holes included (a Q's counter), by masking the line layer with the symbols' hole-filled silhouettes re-posed every frame; `silhouetteOf` makes such a silhouette for any texture. See [docs/SCENES.md](../../docs/SCENES.md#effects-artubeplatecorefx). |
 | `@artubeplate/core/motion` | The studio motion style as data and code (pixi v8 + GSAP 3): `motion.rig` wraps a piece in a `root` for layout and `move` / `body` layers for motion; `motion.play(rig, name, { variant, dir, speed, on })` plays a primitive from the spec (`appear`, `popIn`, `land`, `slam`, `exit`, `wow` S/M/L, `pulse`, `float`, `tease`, `shake`, `hop`, `roll`, `tumble`, `turn`, `swap`, `flip`); `motion.fly` / `motion.count` / `motion.cascade` / `motion.prism` for groups, counters and cubes; `motion.skip` / `motion.stop`; `motion.settled(animation)` (a promise that also settles when the animation is cut short, for cleanup after it); `motion.seconds` / `motion.ease` for the tokens; and `motion.spec`, the playbook's `motion-style.json`. See [Motion](#motion). |
 | `@artubeplate/core/audio` | `GameAudio` / `createGameAudio`: the slot mix on zvuk (below). Loaded lazily by the core when a game passes `audio`. |
-| `@artubeplate/core/assets` | The game side of the asset pipeline: `loadAssets` (the manifest's texture bundles through Pixi's Assets, with progress), `soundsFromManifest` (its audio as zvuk entries: folder = bus, `.N` = variants, music stems), `textureManifest`. |
+| `@artubeplate/core/assets` | The game side of the asset pipeline: `loadAssets` (the manifest's texture bundles through Pixi's Assets, with progress), `imageUrl` (an image's webp for an `<img>`: a HUD card, the rules window), `soundsFromManifest` (its audio as zvuk entries: folder = bus, `.N` = variants, music stems), `textureManifest`. |
 | `@artubeplate/core/testing` | `MockRgs`, `InstantTicker` and `mockHud()`, a recording HUD port, to run whole rounds headless. |
-| `@artubeplate/core/vite` | `artubeplate()`: serves `math/` to the mock during `vite dev` and validates it on start; proxies `/api/rgs` to `$ARTUBE_HOST`; runs the asset pipeline over `raw-assets/` (AssetPack: spritesheets, @0.5x, png/webp, webm + mp3, content-hashed names) and serves its manifest as `import assets from 'artubeplate:assets'`. `@assetpack/core` is needed only when the folder exists. |
+| `@artubeplate/core/vite` | `artubeplate()`: serves `math/` to the mock during `vite dev` and validates it on start; proxies `/api/rgs` to `$ARTUBE_HOST`; runs the asset pipeline over `raw-assets/` (AssetPack: spritesheets, @0.5x, webp + avif and no png or jpg, webm + mp3, content-hashed names) and serves its manifest as `import assets from 'artubeplate:assets'`. `@assetpack/core` is needed only when the folder exists. |
 | `@artubeplate/core/node` | `validateDir`, `loadArtifactDir`, `writeArtifact`, `convertStake`, `packDir`, `ensureConfig`: the Node half of the math tooling. |
 
 ## Sound
@@ -293,6 +293,27 @@ environment during `vite dev`, so `http://localhost:8080/?sessionId=â€¦&gameId=â
 that build to Artube. The plugin also decides whether the mock may run: in `vite dev` and a demo
 build it may; a plain build never runs it, so a deployed game opened without a session shows
 "No game session" instead of looking for math.
+
+### Images: webp and avif, nothing else
+
+Every png and jpg in `raw-assets/` is a source. The pipeline writes each one as **webp and avif**
+(at @1x and @0.5x, spritesheets included) and ships no png or jpg. Pixi loads avif where the
+browser decodes it and webp everywhere else; the DOM takes the webp:
+
+```ts
+import assets from 'artubeplate:assets';
+import { imageUrl } from '@artubeplate/core/assets';
+
+const card = imageUrl(assets, 'card-buy');   // 'assets/game/ui/card-buy-<hash>.webp', for an <img>
+```
+
+Ours are webp at quality 90 with its alpha untouched and avif at quality 80 in 4:4:4. A game changes
+them per format with sharp's options, drops one, or asks for png / jpg as well (written in full
+colour, never a palette) for a host that needs them:
+
+```ts
+artubeplate({ assets: { images: { avif: { quality: 70 }, png: true } } })
+```
 
 ## The `artubeplate` CLI
 

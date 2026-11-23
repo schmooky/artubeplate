@@ -273,7 +273,7 @@ export class Scene implements ViewHooks {
     this.board.addChild(this.frame);
 
     // Symbol art: a frame named `sym-<id>` in a raw-assets spritesheet (the asset pipeline packs
-    // it, hashes it and picks @0.5x/@1x, png/webp per device), else the config's `image` URL
+    // it, hashes it and picks @0.5x/@1x, avif/webp per device), else the config's `image` URL
     // (keep those files in public/ under a new name for every change: the Artube CDN caches each
     // file for a year), else the code-drawn placeholder tile.
     const art = new Map<string, Texture>();

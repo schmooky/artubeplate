@@ -80,11 +80,15 @@ const AUDIO = { sounds: soundsFromManifest(assets), bgm: 'base' }; // sounds, ro
 | In `raw-assets/` | Becomes |
 |---|---|
 | `game{m}/` | a bundle `game` (`{m}`: one manifest bundle per folder) |
-| `game{m}/symbols{tps}/sym-H1.png` … | one spritesheet (`{tps}`), @1x and @0.5x, png + webp; frames keep their file names |
-| `game{m}/bg/bg-base.jpg` | jpg + webp, @1x and @0.5x; Pixi picks per device |
+| `game{m}/symbols{tps}/sym-H1.png` … | one spritesheet (`{tps}`), @1x and @0.5x, as webp and avif; frames keep their file names |
+| `game{m}/bg/bg-base.jpg` | webp and avif, @1x and @0.5x; Pixi picks per device |
 | `audio{m}/<bus>/name.wav` | webm (Opus) + mp3; plays as `name` on that bus |
 | `audio{m}/reels/reel-stop.1.wav`, `.2`, `.3` | variants: a different take on every `play('reel-stop')` |
 | `audio{m}/music/base.mp3`, `bonus.mp3` | the music tracks (`base.intro` / `base.loop` / `base.outro` for stems) |
+
+The png and jpg files in `raw-assets/` are sources only: the game ships **webp and avif, no png or
+jpg**. Pixi loads avif where the browser decodes it and webp elsewhere; for an `<img>` (a HUD card,
+the rules window) take the webp with `imageUrl(assets, 'card-buy')` from `@artubeplate/core/assets`.
 
 New art keeps the names and the game picks it up; a new sound is a new file and one
 `ctx.audio?.play('its-name')`.

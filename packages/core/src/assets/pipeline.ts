@@ -21,8 +21,18 @@ export interface AssetsOptions {
   output?: string;
   /** Texture resolutions. Default `{ default: 1, low: 0.5 }`: Pixi picks @0.5x on small screens. */
   resolutions?: Record<string, number>;
-  /** Image formats. Default png + webp (Pixi loads webp where the browser supports it). */
-  images?: { png?: boolean; webp?: boolean; avif?: boolean; jpg?: boolean };
+  /**
+   * The image formats the game ships. Default: **webp and avif, nothing else**. Every png and jpg
+   * in `raw-assets/` is a source: it is written out as webp and as avif (at each resolution, sheets
+   * included), and Pixi loads avif where the browser decodes it, webp everywhere else. No png or jpg
+   * reaches `public/assets`. For a format: `true` is our settings, an object is sharp's options for
+   * it merged over ours, `false` drops it; `png` / `jpg` set to `true` (or options) ship that format
+   * as well, for a host that needs it.
+   *
+   * Ours: webp at quality 90 with its alpha untouched, avif at quality 80 in 4:4:4. (AssetPack's own
+   * defaults cut every png to a 256-colour dithered palette and ring round soft edges in webp.)
+   */
+  images?: { webp?: boolean | Record<string, unknown>; avif?: boolean | Record<string, unknown>; png?: boolean | Record<string, unknown>; jpg?: boolean | Record<string, unknown> };
   /** Audio bitrates in kbps. Default effects 64 (Opus) / 96 (mp3) mono; music 96 / 128 stereo. */
   audio?: { effects?: { opus?: number; mp3?: number }; music?: { opus?: number; mp3?: number } };
   /** Extra AssetPack config merged over ours (pipes, ignore, assetSettings…). */
@@ -50,6 +60,35 @@ export function resolveAssets(root: string, publicDir: string, opts: AssetsOptio
   };
 }
 
+/** Our settings per image format (see `AssetsOptions.images`). */
+export const IMAGE_DEFAULTS = Object.freeze({
+  webp: Object.freeze({ quality: 90, alphaQuality: 100, smartSubsample: true }),
+  avif: Object.freeze({ quality: 80, effort: 4, chromaSubsampling: '4:4:4' }),
+  // only when a game asks for them: full colour, never a palette
+  png: Object.freeze({ palette: false, compressionLevel: 9, adaptiveFiltering: true }),
+  jpg: Object.freeze({ quality: 90, mozjpeg: true }),
+});
+
+export type ImageSetting = false | 'skip' | Record<string, unknown>;
+
+/**
+ * What AssetPack's compress pipes get per format. A source format the game does not ship is
+ * `'skip'`: AssetPack then writes neither a recompressed copy nor the original (with plain `false`
+ * it passes the source png / jpg through untouched). With webp and avif both switched off there
+ * would be nothing to load, so png and jpg come back.
+ */
+export function imageSettings(images: AssetsOptions['images'] = {}): { webp: false | Record<string, unknown>; avif: false | Record<string, unknown>; png: ImageSetting; jpg: ImageSetting } {
+  const own = (format: keyof typeof IMAGE_DEFAULTS, byDefault: boolean): false | Record<string, unknown> => {
+    const v = images[format] ?? byDefault;
+    if (v === false) return false;
+    return { ...IMAGE_DEFAULTS[format], ...(v === true ? {} : v) };
+  };
+  const webp = own('webp', true);
+  const avif = own('avif', true);
+  const modern = webp !== false || avif !== false;
+  return { webp, avif, png: own('png', !modern) || (modern ? 'skip' : false), jpg: own('jpg', !modern) || (modern ? 'skip' : false) };
+}
+
 /** The AssetPack config for an artubeplate game. */
 export async function assetPackConfig(r: ResolvedAssets, opts: AssetsOptions): Promise<Record<string, unknown>> {
   const { pixiPipes } = await import('@assetpack/core/pixi');
@@ -59,7 +98,7 @@ export async function assetPackConfig(r: ResolvedAssets, opts: AssetsOptions): P
     { formats: ['.webm'], recompress: true, options: { audioCodec: 'libopus', audioBitrate: rate.opus, audioChannels: channels, audioFrequency: 48000 } },
     { formats: ['.mp3'], recompress: true, options: { audioBitrate: rate.mp3, audioChannels: channels, audioFrequency: 44100 } },
   ];
-  const images = { png: true, webp: true, avif: false, jpg: true, ...opts.images };
+  const images = imageSettings(opts.images);
   return {
     entry: r.entry,
     output: r.output,

@@ -43,6 +43,35 @@ export function textureManifest(manifest: AssetsManifest): AssetsManifest {
   };
 }
 
+export interface ImageUrlOptions {
+  /** Where the processed files are served, relative to the page. Default `assets`. */
+  basePath?: string;
+  /** The formats to take, best first. Default webp, avif, png, jpg: webp is the one every browser draws in an `<img>`. */
+  formats?: string[];
+}
+
+/**
+ * The URL of an image for the DOM (a HUD card, the rules window, an `<img>`): the file behind
+ * `alias` in the manifest, at full resolution, in the first of `formats` the pipeline wrote.
+ * Pixi's textures need none of this (`Texture.from(alias)` after `loadAssets`). Undefined when the
+ * manifest has no such image.
+ */
+export function imageUrl(manifest: AssetsManifest, alias: string, opts: ImageUrlOptions = {}): string | undefined {
+  const formats = opts.formats ?? ['webp', 'avif', 'png', 'jpg', 'jpeg'];
+  for (const bundle of manifest.bundles) {
+    for (const a of Array.isArray(bundle.assets) ? (bundle.assets as Entry[]) : []) {
+      const aliases = Array.isArray(a.alias) ? a.alias : a.alias ? [a.alias] : [];
+      if (!aliases.includes(alias)) continue;
+      const full = srcsOf(a).filter((s) => !/@\d+(\.\d+)?x\./.test(s) || /@1x\./.test(s));
+      for (const f of formats) {
+        const hit = full.find((s) => s.toLowerCase().endsWith(`.${f}`));
+        if (hit) return join(opts.basePath ?? DEFAULT_ASSETS_BASE, hit);
+      }
+    }
+  }
+  return undefined;
+}
+
 export interface LoadAssetsOptions {
   /** Bundles to load. Default: every bundle that has textures (or data), in manifest order. */
   bundles?: string[];

@@ -23,7 +23,7 @@ npm run dev          # plays on a local mock RGS that draws from math/
 |---|---|
 | `--math <dir>` | Use this math instead of the showcase math. An **Artube upload set** (`index.json` with `settings`) is copied into `math/`, only the files `index.json` references. A **Stake Engine `publish_files` folder** is staged in `math-stake/`; convert it after install with `npm run math:from-stake -- math-stake --out math`. |
 | `--game-server-id <id>` | Writes `VITE_GAME_SERVER_ID` to `.env`: a fallback for the hub's `game` parameter. Artube launch URLs carry it as `?gameId=` (your publicGameId; `<publicGameId>-stage` on Stage), which always wins. |
-| `--core <spec>` | The `@artubeplate/core` to depend on. Default: the published `^0.1.0`. For a core that is not on npm yet, pass a packed `.tgz`: it is copied into the project's `vendor/` and written as `file:vendor/<name>.tgz`, so the project installs anywhere, Artube's pipeline included. A folder is written as an absolute `file:` path, which only works on this machine. |
+| `--core <spec>` | The `@artubeplate/core` to depend on. Default: the published `^2.1.0`. For a core that is not on npm yet, pass a packed `.tgz`: it is copied into the project's `vendor/` and written as `file:vendor/<name>.tgz`, so the project installs anywhere, Artube's pipeline included. A folder is written as an absolute `file:` path, which only works on this machine. |
 | `-y`, `--yes` | No prompts. |
 
 ## What you get
@@ -38,6 +38,9 @@ A complete game that plays out of the box:
   campaigns, the max-win modal, reconnects, error codes, one connection per session, demo sessions.
 - A local mock RGS for `npm run dev`, with URL knobs for every scenario (`?frc=10`,
   `?mockError=503`, `?maxWin=500`, `?currency=demo`, `?force=buyfs:12`…).
+- An asset pipeline over `raw-assets/`: spritesheets, @1x and @0.5x, content-hashed names, and
+  **webp and avif only**. The png and jpg you drop in are sources; none ships. Pixi loads avif
+  where the browser decodes it and webp elsewhere.
 - The math tooling as npm scripts: `math:check`, `math:stats`, `math:config`, `math:from-stake`.
 - Ready for Artube's pipeline (Artube's own, not part of the project): `npm ci && npm run build`
   gives `dist/` with relative, content-hashed assets. The dev server runs on port 8080, where Hub's
