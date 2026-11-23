@@ -41,6 +41,8 @@ test('bet ladder: ▲ raises the stake that the next spin pays', async ({ page }
 });
 
 test('buy feature: 100× charged, the rules screen waits, the bonus plays by itself, the total screen waits, back to idle', async ({ page }) => {
+  // A whole bonus: on a runner that draws in software it alone takes about two minutes.
+  test.setTimeout(300_000);
   await boot(page);
   await page.locator('#FeatureBuyToggle').click();
   await expect(page.locator('#FeatureBuyWindow')).toBeVisible();
